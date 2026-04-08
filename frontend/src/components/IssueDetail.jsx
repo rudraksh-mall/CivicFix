@@ -291,7 +291,22 @@ export function IssueDetail({ issue, userRole }) {
                   </div>
                 </div>
               </div>
-
+              {/* 🔥 PRIORITY SCORE (NOW FOR CITIZENS TOO) */}
+          {issue.priorityScore > 0 && (
+            <Card className="p-6 bg-orange-50/40 dark:bg-orange-950/30">
+              <div className="flex justify-between items-center text-orange-600">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={16} />
+                  <span className="text-[10px] font-black uppercase">
+                    Priority Score
+                  </span>
+                </div>
+                <span className="text-2xl font-black">
+                  {issue.priorityScore}%
+                </span>
+              </div>
+            </Card>
+          )}
               {userRole === "authority" && (
                 <div className="pt-6 border-t dark:border-slate-800">
                   {!showUpdateForm ? (
