@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { ApiError } from "../utils/ApiError.js";
 
-const auth = (req, res, next) => {
+export const auth = (req, res, next) => {
   const header = req.headers.authorization;
 
   if (!header) throw new ApiError(401, "No token");
@@ -14,6 +14,15 @@ const auth = (req, res, next) => {
   } catch {
     throw new ApiError(401, "Invalid token");
   }
+};
+
+export const authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      throw new ApiError(403, `Access denied. Required role: ${roles.join(" or ")}`);
+    }
+    next();
+  };
 };
 
 export default auth;

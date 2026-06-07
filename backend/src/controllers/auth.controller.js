@@ -14,7 +14,7 @@ import { generateOTP } from "../utils/generateOtp.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
 export const googleAuth = asyncHandler(async (req, res) => {
-  const { credential, role, wardId } = req.body;
+  const { credential } = req.body;
 
   if (!credential) {
     throw new ApiError(400, "Google credential missing");
@@ -27,39 +27,50 @@ export const googleAuth = asyncHandler(async (req, res) => {
 
   const payload = ticket.getPayload();
 
-  const { email, name, picture, sub: googleId } = payload;
+  const { email, name, picture, sub: googleId, email_verified } = payload;
 
-  let user = await User.findOne({ email });
-
-  // If user exists but was created via email/password
-  if (user && user.authProvider === "local") {
-    throw new ApiError(
-      400,
-      "Email already registered using password login"
-    );
+  // Security: never trust role from frontend
+  if (!email_verified) {
+    throw new ApiError(400, "Google email not verified");
   }
 
-  // Create user if not exists
-  if (!user) {
-    if (!["citizen", "authority"].includes(role)) {
-      throw new ApiError(400, "Invalid role");
-    }
+  let user = await User.findOne({ email });
+  let isNewUser = false;
 
-    if (role === "authority" && !wardId) {
-      throw new ApiError(400, "Ward ID required for authority");
-    }
+  // Block deactivated accounts
+  if (user && !user.isActive) {
+    throw new ApiError(403, "Account has been deactivated. Contact administrator.");
+  }
 
+  // Block admin OAuth entirely
+  if (user && user.role === "admin") {
+    throw new ApiError(403, "Admin accounts must sign in using email and password.");
+  }
+
+  if (user) {
+    // Existing user — link Google if not already linked
+    if (!user.providers.includes("google")) {
+      user.providers.push("google");
+      user.googleId = googleId;
+      user.avatar = user.avatar || picture;
+      user.isVerified = true;
+      await user.save();
+    }
+  } else {
+    // Block OAuth account creation for authority/admin roles
+    // Only citizens can be created via OAuth
     user = await User.create({
       name,
       email,
       avatar: picture,
       googleId,
-      role,
-      wardId: role === "authority" ? wardId : null,
+      role: "citizen",
+      wardId: null,
       isVerified: true,
-      authProvider: "google",
-      password: crypto.randomBytes(20).toString("hex"), // dummy
+      providers: ["google"],
+      password: crypto.randomBytes(20).toString("hex"),
     });
+    isNewUser = true;
   }
 
   const accessToken = user.generateAccessToken();
@@ -82,7 +93,8 @@ export const googleAuth = asyncHandler(async (req, res) => {
       },
       accessToken,
       refreshToken,
-    }, "Google login successful")
+      isNewUser,
+    }, isNewUser ? "Account created successfully" : "Welcome back")
   );
 });
 
@@ -93,12 +105,13 @@ export const register = asyncHandler(async (req, res) => {
   if (!name || !email || !password)
     throw new ApiError(400, "Name, email & password are required");
 
-  if (!["citizen", "authority"].includes(role)) {
-    throw new ApiError(400, "Invalid role");
+  // Authority accounts cannot self-register
+  if (role === "authority") {
+    throw new ApiError(403, "Authority accounts are created by administrators. Please contact your municipal corporation.");
   }
 
-  if (role === "authority" && !wardId) {
-    throw new ApiError(400, "Ward ID is required for authority");
+  if (role !== "citizen") {
+    throw new ApiError(400, "Invalid role");
   }
 
   let user = await User.findOne({ email });
@@ -113,12 +126,13 @@ export const register = asyncHandler(async (req, res) => {
       name,
       email,
       password,
-      role,
-      wardId : role==="authority" ? wardId : null,
+      role: "citizen",
+      wardId: null,
       isVerified: false,
+      providers: ["local"],
       otp: {
         code: otp,
-        expiresAt: Date.now() + 10 * 60 * 1000, // 10 mins
+        expiresAt: Date.now() + 10 * 60 * 1000,
       },
     });
   } else {
@@ -138,8 +152,7 @@ export const register = asyncHandler(async (req, res) => {
   return res.json(new ApiResponse(200,
     {
       email,
-      role,
-      
+      role: "citizen",
     }
     , "OTP sent to email"));
 });
@@ -177,28 +190,22 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 });
 
 export const login = asyncHandler(async (req, res) => {
-  console.log("step 1 done");
-  const { email, password, role } = req.body;
+  const { email, password } = req.body;
 
-  console.log(role);
-  
+  if (!email || !password)
+    throw new ApiError(400, "Email & password required");
 
-  if (!email || !password || !role)
-    throw new ApiError(400, "Email & password & role required");
-  console.log("step 1 done");
-
-  const user = await User.findOne({ email, role });
+  const user = await User.findOne({ email });
   if (!user) throw new ApiError(400, "Invalid credentials");
-  console.log("step 1 done");
   if (!user.isVerified)
     throw new ApiError(401, "Please verify your email first");
-  console.log("step 1 done");
+  if (!user.isActive)
+    throw new ApiError(403, "Account has been deactivated. Contact administrator.");
+  if (!user.providers.includes("local"))
+    throw new ApiError(400, "This account uses Google login. Please sign in with Google.");
 
   const isMatch = await user.isPasswordCorrect(password);
-  console.log("step 1 done");
-  console.log(isMatch);
   if (!isMatch) throw new ApiError(400, "Invalid credentials");
-  console.log("step 1 done");
 
   const accessToken = user.generateAccessToken();
 

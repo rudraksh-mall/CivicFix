@@ -1,8 +1,9 @@
-export function Card({ children, className = '', onClick }) {
+export function Card({ children, className = '', onClick, hover = true }) {
   return (
-    <div 
-      className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-all ${onClick ? 'cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md' : ''} ${className}`}
+    <div
+      className={`card-base ${hover && onClick ? 'cursor-pointer card-hover' : ''} ${className}`}
       onClick={onClick}
+      style={!onClick ? {} : undefined}
     >
       {children}
     </div>

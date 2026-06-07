@@ -37,6 +37,17 @@ export function IssueDetail({ issue, userRole }) {
   const [afterFixImage, setAfterFixImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
+  useEffect(() => {
+    const fetchIssue = async () => {
+      const res = await complaintService.getComplaintById(issue._id);
+      if (res.success) {
+        useAppStore.setState({ selectedIssue: res.data });
+      }
+    };
+
+    fetchIssue();
+  }, [issue._id]);
+
   // Sync state if the 'issue' prop changes
   useEffect(() => {
     voteStatusRef.current = issue.hasUpvoted || false;
@@ -205,6 +216,49 @@ export function IssueDetail({ issue, userRole }) {
               </div>
             </Card>
 
+            {/* AI Analysis Card */}
+            <Card className="p-6 dark:border-slate-800 bg-gradient-to-br from-white to-blue-50/30 dark:from-slate-900 dark:to-slate-800/30">
+              <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">
+                AI Vision Analysis
+              </h3>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Category</p>
+                  <p className="font-black text-slate-900 dark:text-white capitalize">
+                    {issue.aiCategory || "Other"}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Confidence</p>
+                  <p className="font-black text-slate-900 dark:text-white">
+                    {issue.aiConfidence ? `${(issue.aiConfidence * 100).toFixed(0)}%` : "—"}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Source</p>
+                  <p className="font-black text-slate-900 dark:text-white">
+                    {issue.aiStatus === "ai" ? "AI" : "Fallback"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {issue.aiKeywords?.length > 0 ? (
+                  issue.aiKeywords.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-3 py-1 bg-white dark:bg-slate-800 text-[10px] font-bold rounded-full border border-slate-200 dark:border-slate-700"
+                    >
+                      #{tag}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-slate-400 italic text-xs">
+                    Awaiting processing...
+                  </span>
+                )}
+              </div>
+            </Card>
+
             {(issue.authorityRemarks || issue.afterFixImageUrl) && (
               <Card className="p-8 border-none shadow-2xl bg-blue-600 text-white rounded-[2rem]">
                 <div className="flex items-center gap-3 mb-6">
@@ -259,7 +313,22 @@ export function IssueDetail({ issue, userRole }) {
                   </div>
                 </div>
               </div>
-
+              {/* 🔥 PRIORITY SCORE (NOW FOR CITIZENS TOO) */}
+              {issue.priorityScore > 0 && (
+                <Card className="p-6 bg-orange-50/40 dark:bg-orange-950/30">
+                  <div className="flex justify-between items-center text-orange-600">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle size={16} />
+                      <span className="text-[10px] font-black uppercase">
+                        Priority Score
+                      </span>
+                    </div>
+                    <span className="text-2xl font-black">
+                      {issue.priorityScore}%
+                    </span>
+                  </div>
+                </Card>
+              )}
               {userRole === "authority" && (
                 <div className="pt-6 border-t dark:border-slate-800">
                   {!showUpdateForm ? (

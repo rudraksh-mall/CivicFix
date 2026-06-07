@@ -1,4 +1,7 @@
+import crypto from "crypto";
 import Complaint from "../models/complaint.model.js";
+import { User } from "../models/user.model.js";
+import Ward from "../models/ward.model.js";
 
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -108,5 +111,108 @@ export const getEscalations = asyncHandler(async (req, res) => {
       escalatedComplaints,
       "Escalated complaints fetched successfully"
     )
+  );
+});
+
+/**
+ * =====================================
+ * AUTHORITY MANAGEMENT (Admin)
+ * =====================================
+ */
+export const getAuthorities = asyncHandler(async (req, res) => {
+  const authorities = await User.find(
+    { role: "authority" },
+    "name email wardId isActive createdAt"
+  ).populate("wardId", "name city");
+
+  res.json(
+    new ApiResponse(200, authorities, "Authorities fetched successfully")
+  );
+});
+
+export const createAuthority = asyncHandler(async (req, res) => {
+  const { name, email, wardId } = req.body;
+
+  if (!name || !email || !wardId) {
+    throw new ApiError(400, "Name, email, and ward are required");
+  }
+
+  const existing = await User.findOne({ email });
+  if (existing) {
+    throw new ApiError(400, "A user with this email already exists");
+  }
+
+  const ward = await Ward.findById(wardId);
+  if (!ward) {
+    throw new ApiError(404, "Ward not found");
+  }
+
+  const tempPassword = crypto.randomBytes(12).toString("hex");
+
+  const user = await User.create({
+    name,
+    email,
+    password: tempPassword,
+    role: "authority",
+    wardId,
+    isVerified: true,
+    isActive: true,
+    providers: ["local"],
+  });
+
+  res.json(
+    new ApiResponse(201, {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      wardId: user.wardId,
+      wardName: ward.name,
+      city: ward.city,
+      role: user.role,
+      isActive: user.isActive,
+      tempPassword,
+    }, "Authority account created successfully")
+  );
+});
+
+export const updateAuthority = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { name, wardId, isActive } = req.body;
+
+  const user = await User.findById(id);
+  if (!user || user.role !== "authority") {
+    throw new ApiError(404, "Authority not found");
+  }
+
+  if (name !== undefined) user.name = name;
+  if (wardId !== undefined) user.wardId = wardId;
+  if (isActive !== undefined) user.isActive = isActive;
+
+  await user.save();
+
+  res.json(
+    new ApiResponse(200, {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      wardId: user.wardId,
+      isActive: user.isActive,
+    }, "Authority updated successfully")
+  );
+});
+
+export const deactivateAuthority = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const user = await User.findById(id);
+  if (!user || user.role !== "authority") {
+    throw new ApiError(404, "Authority not found");
+  }
+
+  user.isActive = false;
+  await user.save();
+
+  res.json(
+    new ApiResponse(200, null, "Authority deactivated successfully")
   );
 });

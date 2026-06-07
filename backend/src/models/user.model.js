@@ -65,6 +65,12 @@ const userSchema = new Schema(
       default: false,
     },
 
+    // Admin can disable authority accounts
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     // MULTI-DEVICE refresh token storage
     refreshSessions: {
       type: [refreshSessionSchema],
@@ -75,10 +81,10 @@ const userSchema = new Schema(
   default: null,
 },
 
-authProvider: {
-  type: String,
+providers: {
+  type: [String],
   enum: ["local", "google"],
-  default: "local",
+  default: ["local"],
 },
 
   },

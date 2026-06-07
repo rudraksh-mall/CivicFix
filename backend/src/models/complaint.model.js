@@ -32,7 +32,7 @@ const complaintSchema = new mongoose.Schema(
     /* AI Analysis Fields */
     aiCategory: {
       type: String,
-      enum: ["garbage", "road", "drainage", "lighting", "other"],
+      enum: ["garbage", "road", "drainage", "lighting", "water", "traffic", "infrastructure", "obstruction", "other"],
       default: "other",
     },
 
@@ -42,8 +42,19 @@ const complaintSchema = new mongoose.Schema(
       default: "medium",
     },
 
-    // useful for giving priority score
     aiKeywords: [String],
+
+    aiConfidence: {
+      type: Number,
+      min: 0,
+      max: 1,
+      default: null,
+    },
+
+    aiRejectionReason: {
+      type: String,
+      default: null,
+    },
 
     aiStatus: {
         type: String,
