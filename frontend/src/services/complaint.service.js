@@ -24,6 +24,21 @@ export const complaintService = {
   },
 
   /**
+   * Fetches community complaints with scope filtering.
+   * scopes: nearby, trending, ward, city
+   * Method: GET /api/complaint/allComplaints?scope=...
+   */
+  getCommunityComplaints: async ({ scope, lat, lng, wardId, city } = {}) => {
+    const params = { scope };
+    if (lat) params.lat = lat;
+    if (lng) params.lng = lng;
+    if (wardId) params.wardId = wardId;
+    if (city) params.city = city;
+    const response = await api.get("/complaint/allComplaints", { params });
+    return response.data;
+  },
+
+  /**
    * Fetches the logged-in citizen's reports for their Dashboard.
    * Method: GET /api/complaint/my-reports
    */

@@ -3,13 +3,14 @@ import Complaint from "../models/complaint.model.js";
 export const getAuthorityAnalytics = async (req, res) => {
   try {
     const wardId = req.user.wardId;
-
     const complaints = await Complaint.find({ wardId });
 
     // 1. Category count
     const categoryMap = {};
     complaints.forEach((c) => {
-      categoryMap[c.aiCategory] = (categoryMap[c.aiCategory] || 0) + 1;
+      if (c.aiCategory) {
+        categoryMap[c.aiCategory] = (categoryMap[c.aiCategory] || 0) + 1;
+      }
     });
 
     // 2. Priority distribution
@@ -20,15 +21,21 @@ export const getAuthorityAnalytics = async (req, res) => {
       else priority.low++;
     });
 
-    // 3. Status breakdown
+    // 3. Status breakdown - FIXED KEY FOR FRONTEND SYNC
     const status = {
       submitted: 0,
       acknowledged: 0,
-      "in-progress": 0,
+      in_progress: 0, // ✅ Standardized to underscore
       resolved: 0,
     };
 
-    complaints.forEach((c) => status[c.status]++);
+    complaints.forEach((c) => {
+      // ✅ Normalizes hyphenated data to underscored key
+      const s = c.status === "in-progress" ? "in_progress" : c.status;
+      if (status.hasOwnProperty(s)) {
+        status[s]++;
+      }
+    });
 
     // 4. Resolution time
     const resolved = complaints.filter((c) => c.status === "resolved");
@@ -44,13 +51,11 @@ export const getAuthorityAnalytics = async (req, res) => {
 
     // 5. Weekly Trend (LAST 4 WEEKS)
     const trend = [];
-
     for (let i = 3; i >= 0; i--) {
-      const start = new Date();
-      start.setDate(start.getDate() - (i + 1) * 7);
-
       const end = new Date();
       end.setDate(end.getDate() - i * 7);
+      const start = new Date();
+      start.setDate(start.getDate() - (i + 1) * 7);
 
       const weeklyComplaints = complaints.filter(
         (c) => c.createdAt >= start && c.createdAt < end

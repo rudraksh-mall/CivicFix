@@ -1,7 +1,7 @@
 export const fallbackClassify = (description = "") => {
   const text = description.toLowerCase();
 
-  let category = "road"; // safe default
+  let category = "other";
   let severity = "medium";
   let keywords = [];
 
@@ -11,12 +11,7 @@ export const fallbackClassify = (description = "") => {
     )
   ) {
     category = "garbage";
-    keywords.push(
-      "garbage",
-      "waste",
-      "cleanliness",
-      "overflowing-bin"
-    );
+    keywords.push("garbage", "waste", "cleanliness", "overflowing-bin");
   }
 
   if (
@@ -25,12 +20,7 @@ export const fallbackClassify = (description = "") => {
     )
   ) {
     category = "drainage";
-    keywords.push(
-      "drainage",
-      "sewage",
-      "waterlogging",
-      "blocked-drain",
-    );
+    keywords.push("drainage", "sewage", "waterlogging", "blocked-drain");
   }
 
   if (
@@ -39,13 +29,7 @@ export const fallbackClassify = (description = "") => {
     )
   ) {
     category = "lighting";
-    keywords.push(
-      "streetlight",
-      "dark-area",
-      "lamp-post",
-      "public-safety",
-      "night-visibility"
-    );
+    keywords.push("streetlight", "dark-area", "lamp-post", "public-safety", "night-visibility");
   }
 
   if (
@@ -54,12 +38,43 @@ export const fallbackClassify = (description = "") => {
     )
   ) {
     category = "road";
-    keywords.push(
-      "road-damage",
-      "pothole",
-      "unsafe-road",
-      "infrastructure"
-    );
+    keywords.push("road-damage", "pothole", "unsafe-road", "infrastructure");
+  }
+
+  if (
+    /water ?leak|pipe burst|water logging|flood|water supply|no water|tap|borewell|overhead tank/.test(
+      text
+    )
+  ) {
+    category = "water";
+    keywords.push("water-leakage", "water-supply", "flooding", "pipe-damage");
+  }
+
+  if (
+    /traffic ?signal|traffic ?light|signal not working|traffic jam|signal broken/.test(
+      text
+    )
+  ) {
+    category = "traffic";
+    keywords.push("traffic-signal", "road-safety", "signal-fault");
+  }
+
+  if (
+    /footpath|sidewalk|bridge|flyover|underpass|public toilet|park|playground|bus stop|bench|railing/.test(
+      text
+    )
+  ) {
+    category = "infrastructure";
+    keywords.push("public-infrastructure", "damage", "maintenance");
+  }
+
+  if (
+    /road ?block|obstruction|barricade|fallen tree|debris on road|encroachment|illegal parking/.test(
+      text
+    )
+  ) {
+    category = "obstruction";
+    keywords.push("road-obstruction", "blockage", "safety-hazard");
   }
 
   if (
@@ -83,5 +98,6 @@ export const fallbackClassify = (description = "") => {
     severity,
     keywords,
     source: "fallback",
+    confidence: 0.5,
   };
 };

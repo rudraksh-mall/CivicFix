@@ -143,6 +143,7 @@ export function ComplaintManagement() {
                 <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">
                   <th className="px-6 py-4 text-left">Issue</th>
                   <th className="px-6 py-4 text-left">Category</th>
+                  <th className="px-6 py-4 text-left">Ward</th>
                   <th className="px-6 py-4 text-left">Location</th>
                   <th className="px-6 py-4 text-left">Priority</th>
                   <th className="px-6 py-4 text-left">Status</th>
@@ -179,6 +180,10 @@ export function ComplaintManagement() {
 
                     <td className="px-6 py-4">
                       <Badge>{issue.aiCategory}</Badge>
+                    </td>
+
+                    <td className="px-6 py-4 text-xs font-medium text-slate-600 dark:text-slate-400">
+                      {issue.wardId?.name || "—"}
                     </td>
 
                     <td className="px-6 py-4 text-xs font-medium text-slate-600 dark:text-slate-400">

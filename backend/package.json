@@ -4,7 +4,12 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
+    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js",
+    "seed": "node src/seed.js",
+    "seed-admin": "node scripts/seedAdmin.js",
+    "import-wards": "node scripts/importWards.js",
+    "import-wards-prayagraj": "node scripts/importWards.js --city=prayagraj",
+    "import-wards-gorakhpur": "node scripts/importWards.js --city=gorakhpur"
   },
   "author": "HackSmith",
   "license": "ISC",
@@ -14,7 +19,6 @@
     "prettier": "^3.7.4"
   },
   "dependencies": {
-    "@google-cloud/vision": "^5.3.4",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.8.0",

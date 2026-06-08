@@ -27,14 +27,15 @@ import {
 } from "recharts";
 
 import { Card } from "./Card";
-import { Header } from "./Header"; // ✅ Ensure Header is imported
+import { Header } from "./Header";
 import { useAppStore } from "../store/useAppStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { fetchAuthorityAnalytics } from "../services/analytics.service";
 
 export function Analytics() {
   const onNavigate = useAppStore((state) => state.navigate);
-  const onLogout = useAuthStore((state) => state.logout); // ✅ Needed for Header
+  const onLogout = useAuthStore((state) => state.logout);
+  const currentAddress = useAppStore((state) => state.currentAddress);
   const [analytics, setAnalytics] = useState(null);
 
   useEffect(() => {
@@ -56,28 +57,38 @@ export function Analytics() {
 
   /* ================== DATA PROCESSING ================== */
 
-  const categoryData = Object.entries(analytics.categoryMap).map(
+  const categoryData = Object.entries(analytics.categoryMap || {}).map(
     ([name, count]) => ({ name: name.toUpperCase(), count })
   );
 
   const priorityData = [
-    { name: "High", value: analytics.priority.high, color: "#ef4444" },
-    { name: "Medium", value: analytics.priority.medium, color: "#f59e0b" },
-    { name: "Low", value: analytics.priority.low, color: "#22c55e" },
+    { name: "High", value: analytics.priority?.high || 0, color: "#ef4444" },
+    {
+      name: "Medium",
+      value: analytics.priority?.medium || 0,
+      color: "#f59e0b",
+    },
+    { name: "Low", value: analytics.priority?.low || 0, color: "#22c55e" },
   ];
 
-  const totalIssues = Object.values(analytics.status).reduce(
+  // FIXED: Using underscore to match standardized backend
+  const totalIssues = Object.values(analytics.status || {}).reduce(
     (a, b) => a + b,
     0
   );
+
   const resolutionRate =
     totalIssues > 0
-      ? ((analytics.status.resolved / totalIssues) * 100).toFixed(1)
+      ? (((analytics.status?.resolved || 0) / totalIssues) * 100).toFixed(1)
       : 0;
+
+  const activeIssuesCount =
+    (analytics.status?.submitted || 0) +
+    (analytics.status?.acknowledged || 0) +
+    (analytics.status?.in_progress || 0);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-      {/* FIXED: Header added for consistent visibility across tabs */}
       <Header
         userRole="authority"
         onLogout={onLogout}
@@ -85,28 +96,28 @@ export function Analytics() {
       />
 
       <div className="flex">
-        {/* SIDEBAR - Fixed for light mode visibility */}
-        <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 min-h-[calc(100vh-73px)]">
+        {/* SIDEBAR - Fixed for light/dark mode visibility */}
+        <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 min-h-[calc(100vh-73px)] shrink-0">
           <nav className="p-4 space-y-1">
             <button
               onClick={() => onNavigate("authority-dashboard")}
-              className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+              className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all font-bold"
             >
               <LayoutDashboard size={20} /> Dashboard
             </button>
             <button
               onClick={() => onNavigate("complaint-management")}
-              className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+              className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all font-bold"
             >
               <FileText size={20} /> Complaints
             </button>
             <button
               onClick={() => onNavigate("map-view")}
-              className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
+              className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all font-bold"
             >
               <Map size={20} /> Map View
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/10 rounded-xl border border-cyan-200 dark:border-cyan-500/20">
+            <button className="w-full flex items-center gap-3 px-4 py-3 text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/10 rounded-xl border border-cyan-200 dark:border-cyan-500/20 font-black">
               <BarChart3 size={20} /> Analytics
             </button>
           </nav>
@@ -116,21 +127,20 @@ export function Analytics() {
         <main className="flex-1 p-8 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             <div className="mb-10">
-              {/* FIXED: Text color for light mode */}
               <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
                 Analytics & Reports
               </h1>
               <p className="text-slate-500 font-medium">
-                Monitoring resolution efficiency and issue density in Prayagraj
+                Monitoring resolution efficiency and issue density in {currentAddress}
               </p>
             </div>
 
-            {/* KEY METRICS GRID - Fixed for alignment */}
+            {/* KEY METRICS GRID */}
             <div className="grid md:grid-cols-4 gap-6 mb-8">
               {[
                 {
                   label: "Avg. Resolution",
-                  value: `${analytics.avgResolutionTime} Days`,
+                  value: `${analytics.avgResolutionTime || 0} Days`,
                   icon: Clock,
                   color: "text-blue-500",
                 },
@@ -142,16 +152,13 @@ export function Analytics() {
                 },
                 {
                   label: "Active Issues",
-                  value:
-                    analytics.status.submitted +
-                    analytics.status.acknowledged +
-                    analytics.status["in-progress"],
+                  value: activeIssuesCount,
                   icon: Activity,
                   color: "text-orange-500",
                 },
                 {
                   label: "Total Resolved",
-                  value: analytics.status.resolved,
+                  value: analytics.status?.resolved || 0,
                   icon: BarChartIcon,
                   color: "text-purple-500",
                 },
@@ -183,13 +190,8 @@ export function Analytics() {
                   <BarChart data={categoryData}>
                     <CartesianGrid
                       strokeDasharray="3 3"
-                      stroke="#e2e8f0"
-                      className="dark:hidden"
-                    />
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="#1e293b"
-                      className="hidden dark:block"
+                      vertical={false}
+                      strokeOpacity={0.1}
                     />
                     <XAxis
                       dataKey="name"
@@ -205,11 +207,13 @@ export function Analytics() {
                       axisLine={false}
                     />
                     <Tooltip
+                      cursor={{ fill: "transparent" }}
                       contentStyle={{
                         backgroundColor: "#0f172a",
                         border: "none",
                         borderRadius: "8px",
                         color: "#fff",
+                        fontSize: "12px",
                       }}
                     />
                     <Bar
@@ -240,13 +244,17 @@ export function Analytics() {
                       ))}
                     </Pie>
                     <Tooltip />
-                    <Legend verticalAlign="bottom" height={36} />
+                    <Legend
+                      verticalAlign="bottom"
+                      height={36}
+                      iconType="circle"
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </Card>
             </div>
 
-            {/* STATUS BREAKDOWN GRID - FIXED FOR ALIGNMENT AND LIGHT MODE */}
+            {/* STATUS BREAKDOWN GRID */}
             <Card className="p-8 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 shadow-xl rounded-[2rem] mb-8">
               <h3 className="text-sm font-black text-slate-900 dark:text-slate-400 uppercase tracking-widest mb-10 flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-cyan-500" />
@@ -256,22 +264,22 @@ export function Analytics() {
                 {[
                   {
                     label: "Submitted",
-                    val: analytics.status.submitted,
+                    val: analytics.status?.submitted,
                     color: "bg-slate-400",
                   },
                   {
                     label: "Acknowledged",
-                    val: analytics.status.acknowledged,
+                    val: analytics.status?.acknowledged,
                     color: "bg-blue-500",
                   },
                   {
                     label: "In Progress",
-                    val: analytics.status["in-progress"],
+                    val: analytics.status?.in_progress, // FIXED: underscore sync
                     color: "bg-orange-500",
                   },
                   {
                     label: "Resolved",
-                    val: analytics.status.resolved,
+                    val: analytics.status?.resolved,
                     color: "bg-green-500",
                   },
                 ].map((item, idx) => (
@@ -296,39 +304,47 @@ export function Analytics() {
                 Resolution Trend (Weekly)
               </h3>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={analytics.trend}>
+                <LineChart data={analytics.trend || []}>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="#e2e8f0"
-                    className="dark:hidden"
+                    vertical={false}
+                    strokeOpacity={0.1}
                   />
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#1e293b"
-                    className="hidden dark:block"
+                  <XAxis
+                    dataKey="label"
+                    stroke="#64748b"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
                   />
-                  <XAxis dataKey="label" stroke="#64748b" fontSize={10} />
-                  <YAxis stroke="#64748b" fontSize={10} />
+                  <YAxis
+                    stroke="#64748b"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "#0f172a",
                       border: "none",
+                      borderRadius: "8px",
+                      color: "#fff",
                     }}
                   />
-                  <Legend />
+                  <Legend iconType="plainline" />
                   <Line
                     type="monotone"
                     dataKey="reported"
                     stroke="#3b82f6"
                     strokeWidth={3}
-                    dot={{ r: 4 }}
+                    dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
                   />
                   <Line
                     type="monotone"
                     dataKey="resolved"
                     stroke="#22c55e"
                     strokeWidth={3}
-                    dot={{ r: 4 }}
+                    dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
                   />
                 </LineChart>
               </ResponsiveContainer>

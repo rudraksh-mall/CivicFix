@@ -21,3 +21,8 @@ export const fetchWards = (city) => {
 export const fetchCities = () => {
   return api.get("/wards/cities");
 };
+
+export const lookupWard = async (lat, lng) => {
+  const res = await api.get("/wards/lookup", { params: { lat, lng } });
+  return res.data;
+};

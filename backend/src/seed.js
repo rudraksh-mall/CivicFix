@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Ward from "./models/ward.model.js";
 import dotenv from "dotenv";
+import { DB_NAME } from "./constants.js";
 
 dotenv.config();
 
@@ -73,7 +74,7 @@ const lucknowWards = [
 
 const seedDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(`${process.env.MONGODB_URI}?dbName=${DB_NAME}`);
     console.log("Connected to MongoDB...");
 
     // Clear old wards to avoid duplicates

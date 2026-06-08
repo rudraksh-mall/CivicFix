@@ -41,6 +41,7 @@ export const getAuthorityDashboard = asyncHandler(async (req, res) => {
     priorityScore: { $gte: 65 },
     status: { $ne: "resolved" },
   })
+    .populate("wardId", "name city")
     .sort({ priorityScore: -1 })
     .limit(5)
     .lean();
@@ -48,6 +49,7 @@ export const getAuthorityDashboard = asyncHandler(async (req, res) => {
   // 3. Fetch recent complaints for activity feed
   // This provides unique timestamps for each "New submission" entry
   const recent = await Complaint.find({ wardId })
+    .populate("wardId", "name city")
     .sort({ createdAt: -1 })
     .limit(15)
     .lean();

@@ -4,7 +4,6 @@ import Vote from "../models/vote.model.js"; // Import needed for Discovery synch
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
-import { fallbackClassify } from "../services/fallbackClassifier.js";
 import { validateDescription } from "../utils/validateDescription.js";
 
 // Services
@@ -49,37 +48,25 @@ export const createComplaint = asyncHandler(async (req, res) => {
 
   if (!ward) throw new ApiError(404, "Ward not found for this location");
 
-  let aiCategory;
-  let aiSeverity;
-  let aiKeywords;
-  let aiStatus;
+  const aiResult = await analyzeComplaintWithAI({ imageUrl, description });
 
-  try {
-    const aiResult = await analyzeComplaintWithAI({ imageUrl, description });
-
-    // If AI explicitly returned fallback signal
-    if (aiResult?.fallback || aiResult?.error) {
-      const fallback = fallbackClassify(description);
-
-      aiCategory = fallback.category;
-      aiSeverity = fallback.severity;
-      aiKeywords = fallback.keywords;
-      aiStatus = "fallback";
-    } else {
-      aiCategory = aiResult.category;
-      aiSeverity = aiResult.severity;
-      aiKeywords = aiResult.keywords;
-      aiStatus = "ai";
-    }
-  } catch (err) {
-
-    const fallback = fallbackClassify(description);
-
-    aiCategory = fallback.category;
-    aiSeverity = fallback.severity;
-    aiKeywords = fallback.keywords;
-    aiStatus = "fallback";
+  if (aiResult.isRelevant === false) {
+    throw new ApiError(400, aiResult.rejectionReason || "Image rejected. Please upload a photo of a valid civic issue.");
   }
+
+  if (aiResult.descriptionMatches === false) {
+    throw new ApiError(400, aiResult.mismatchReason || "The uploaded image and description appear to describe different issues. Please ensure the description matches what is visible in the image.");
+  }
+
+  if (aiResult.aiUnavailable) {
+    throw new ApiError(503, "AI image verification is temporarily unavailable. Please try again later.");
+  }
+
+  const aiCategory = aiResult.category;
+  const aiSeverity = aiResult.severity;
+  const aiKeywords = aiResult.keywords;
+  const aiStatus = "ai";
+  const aiConfidence = aiResult.confidence;
 
 
   const complaint = await Complaint.create({
@@ -92,6 +79,7 @@ export const createComplaint = asyncHandler(async (req, res) => {
     aiSeverity,
     aiKeywords,
     aiStatus,
+    aiConfidence,
   });
 
   complaint.priorityScore = calculatePriority(complaint);
@@ -103,14 +91,88 @@ export const createComplaint = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Haversine distance in kilometers between two lat/lng points.
+ */
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
  * GET ALL COMPLAINTS (Community Discovery)
- * UPDATED: Injects 'hasUpvoted' to prevent duplicate POST 400 errors
- * UPDATED: Selects more fields to fix missing Discovery data
+ * Supports scope query param: nearby | trending | ward | city
+ * - nearby: filter by radius from provided lat/lng, sort by distance
+ * - trending: sort by upvoteCount descending
+ * - ward: filter by wardId
+ * - city: filter by ward city name
  */
 export const getAllComplaints = asyncHandler(async (req, res) => {
-  const userId = req.user?._id || null; 
+  const userId = req.user?._id || null;
+  const { scope, lat, lng, wardId, city, radius } = req.query;
 
-  const complaints = await Complaint.find().sort({ createdAt: -1 }).lean();
+  let filter = {};
+  let sortOption = { createdAt: -1 };
+
+  const getCityWardIds = async (cityName) => {
+    if (!cityName) return [];
+    const wards = await Ward.find({ city: new RegExp(cityName, "i") }, "_id");
+    return wards.map((w) => w._id);
+  };
+
+  if (scope === "ward" && wardId) {
+    filter.wardId = wardId;
+  } else if (scope === "city" && city) {
+    const wardIds = await getCityWardIds(city);
+    filter.wardId = { $in: wardIds };
+  } else if (scope === "trending") {
+    sortOption = { upvoteCount: -1, createdAt: -1 };
+    if (city) {
+      const wardIds = await getCityWardIds(city);
+      if (wardIds.length) filter.wardId = { $in: wardIds };
+    }
+  } else if (scope === "nearby" && lat && lng) {
+    if (city) {
+      const wardIds = await getCityWardIds(city);
+      if (wardIds.length) filter.wardId = { $in: wardIds };
+    }
+  }
+
+  let complaints = await Complaint.find(filter)
+    .populate("wardId", "name city")
+    .sort(sortOption)
+    .lean();
+
+  if (scope === "nearby" && lat && lng) {
+    const refLat = parseFloat(lat);
+    const refLng = parseFloat(lng);
+    const selectedRadius = parseFloat(radius) || 5;
+
+    console.log("[Nearby] User coordinates:", refLat, refLng);
+    console.log("[Nearby] Radius selected:", selectedRadius, "km");
+    console.log("[Nearby] Total complaints before filter:", complaints.length);
+
+    complaints = complaints
+      .map((c) => {
+        const distKm = haversineKm(refLat, refLng, c.location.lat, c.location.lng);
+        console.log(
+          `[Nearby]  complaint ${c._id} at (${c.location.lat}, ${c.location.lng}) — distance: ${distKm.toFixed(1)} km`
+        );
+        return { ...c, _distance: distKm };
+      })
+      .filter((c) => c._distance <= selectedRadius)
+      .sort((a, b) => a._distance - b._distance);
+
+    console.log("[Nearby] Complaints within radius:", complaints.length);
+  }
 
   const complaintsWithVoteStatus = await Promise.all(
     complaints.map(async (complaint) => {
@@ -241,18 +303,28 @@ export const updateComplaint = asyncHandler(async (req, res) => {
     if (newWard) complaint.wardId = newWard._id;
   }
 
-  try {
-    const aiResult = await analyzeComplaintWithAI({
-      imageUrl: complaint.imageUrl,
-      description: complaint.description,
-    });
-    complaint.aiCategory = aiResult.category;
-    complaint.aiSeverity = aiResult.severity;
-    complaint.aiKeywords = aiResult.keywords;
-    complaint.priorityScore = calculatePriority(complaint);
-  } catch (error) {
-    console.error("AI Re-analysis failed during edit:", error.message);
+  const aiResult = await analyzeComplaintWithAI({
+    imageUrl: complaint.imageUrl,
+    description: complaint.description,
+  });
+
+  if (aiResult.isRelevant === false) {
+    throw new ApiError(400, aiResult.rejectionReason || "Updated image rejected. Please upload a photo of a valid civic issue.");
   }
+
+  if (aiResult.descriptionMatches === false) {
+    throw new ApiError(400, aiResult.mismatchReason || "The uploaded image and description appear to describe different issues. Please ensure the description matches what is visible in the image.");
+  }
+
+  if (aiResult.aiUnavailable) {
+    throw new ApiError(503, "AI image verification is temporarily unavailable. Please try again later.");
+  }
+
+  complaint.aiCategory = aiResult.category;
+  complaint.aiSeverity = aiResult.severity;
+  complaint.aiKeywords = aiResult.keywords;
+  complaint.aiConfidence = aiResult.confidence;
+  complaint.priorityScore = calculatePriority(complaint);
 
   await complaint.save();
   res.json(
@@ -287,16 +359,28 @@ export const deleteComplaint = asyncHandler(async (req, res) => {
  * ADDITIONAL GETTERS
  */
 export const getWardComplaints = asyncHandler(async (req, res) => {
-  const complaints = await Complaint.find({ wardId: req.user.wardId }).sort({
-    priorityScore: -1,
-    createdAt: -1,
-  });
+  const complaints = await Complaint.find({ wardId: req.user.wardId })
+    .populate("wardId", "name city")
+    .sort({ priorityScore: -1, createdAt: -1 });
   res.json(new ApiResponse(200, complaints, "Success"));
 });
 
 export const getMyComplaints = asyncHandler(async (req, res) => {
-  const complaints = await Complaint.find({ reportedBy: req.user._id }).sort({
-    createdAt: -1,
-  });
-  res.json(new ApiResponse(200, complaints, "Success"));
+  const userId = req.user._id;
+
+  const complaints = await Complaint.find({ reportedBy: userId })
+    .populate("wardId", "name city")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const complaintsWithVoteStatus = await Promise.all(
+    complaints.map(async (complaint) => {
+      let hasUpvoted = false;
+      const userVote = await Vote.findOne({ complaintId: complaint._id, userId });
+      hasUpvoted = !!userVote;
+      return { ...complaint, hasUpvoted };
+    })
+  );
+
+  res.json(new ApiResponse(200, complaintsWithVoteStatus, "Success"));
 });

@@ -212,7 +212,7 @@ export function AuthorityDashboard() {
                               {issue.aiCategory}
                             </div>
                             <div className="text-slate-500 text-[10px]">
-                              {issue.location?.address || "Prayagraj"}
+                              {issue.wardId?.name || issue.location?.address || "Prayagraj"}
                             </div>
                           </div>
                           <Badge status={issue.status} />
@@ -263,7 +263,8 @@ export function AuthorityDashboard() {
                             : issue.status === "in_progress"
                             ? "Work in progress"
                             : "Submitted"}{" "}
-                          • {formatDate(issue.createdAt)}
+                          • {issue.wardId?.name || issue.city || "Prayagraj"}
+                          {" • "}{formatDate(issue.createdAt)}
                         </div>
                       </div>
                     </div>
