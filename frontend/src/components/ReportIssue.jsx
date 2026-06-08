@@ -64,6 +64,7 @@ export function ReportIssue() {
   const setSelectedLocation = useAppStore((state) => state.setSelectedLocation);
   const setCurrentAddress = useAppStore((state) => state.setCurrentAddress);
 
+  const gpsLocation = useAppStore((state) => state.gpsLocation);
   const image = useAppStore((state) => state.reportImage);
   const setImage = useAppStore((state) => state.setReportImage);
   const reportFile = useAppStore((state) => state.reportFile);
@@ -132,7 +133,32 @@ export function ReportIssue() {
     }
   };
 
+  const reverseGeocode = useCallback(async (lat, lng) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+        { headers: { "User-Agent": "CivicFix-AI-Project/1.0" } }
+      );
+      const data = await res.json();
+      const area =
+        data.address.suburb ||
+        data.address.neighbourhood ||
+        data.address.road ||
+        `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      setCurrentAddress(area);
+    } catch {
+      setCurrentAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    }
+  }, [setCurrentAddress]);
+
   const handleUseMyLocation = () => {
+    if (gpsLocation) {
+      setSelectedLocation(gpsLocation);
+      setLocationAttempted(true);
+      reverseGeocode(gpsLocation.lat, gpsLocation.lng);
+      return;
+    }
+
     if (!("geolocation" in navigator)) {
       toast.error("GPS not available in this browser");
       return;
@@ -143,23 +169,7 @@ export function ReportIssue() {
         const { latitude, longitude } = pos.coords;
         setSelectedLocation({ lat: latitude, lng: longitude });
         setLocationAttempted(true);
-
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
-            { headers: { "User-Agent": "CivicFix-AI-Project/1.0" } }
-          );
-          const data = await res.json();
-          const area =
-            data.address.suburb ||
-            data.address.neighbourhood ||
-            data.address.road ||
-            `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-          setCurrentAddress(area);
-        } catch {
-          setCurrentAddress(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-        }
-
+        await reverseGeocode(latitude, longitude);
         setLocationLoading(false);
       },
       () => {
@@ -208,22 +218,7 @@ export function ReportIssue() {
     const { lat, lng } = modalPickLocation;
     setSelectedLocation({ lat, lng });
     setLocationAttempted(true);
-
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
-        { headers: { "User-Agent": "CivicFix-AI-Project/1.0" } }
-      );
-      const data = await res.json();
-      const area =
-        data.address.suburb ||
-        data.address.neighbourhood ||
-        data.address.road ||
-        `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-      setCurrentAddress(area);
-    } catch {
-      setCurrentAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-    }
+    await reverseGeocode(lat, lng);
 
     setShowMapModal(false);
     setModalPickLocation(null);

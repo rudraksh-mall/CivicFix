@@ -40,7 +40,8 @@ const userSchema = new Schema(
     },
 
     wardId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Ward",
       default: null,
     },
 

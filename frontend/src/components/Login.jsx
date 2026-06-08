@@ -108,7 +108,7 @@ export function Login({ isSignup }) {
             />
           </div>
 
-          {!isSignup && (
+          {/* {!isSignup && (
             <div className="mt-6 pt-6 border-t border-border-default">
               <p className="text-xs text-text-muted text-center mb-2">Municipal Authority?</p>
               <button onClick={() => navigate('login')}
@@ -116,7 +116,7 @@ export function Login({ isSignup }) {
                 Sign in to Authority Portal <ArrowLeft size={14} className="rotate-180" />
               </button>
             </div>
-          )}
+          )} */}
         </Card>
       </div>
     </div>
