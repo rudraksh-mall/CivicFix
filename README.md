@@ -1,165 +1,346 @@
 # 🏛️ CivicFix AI
 
-> A transparent, scalable, and citizen-first civic engagement platform designed to streamline complaint reporting, enhance community participation, and improve governance through data-driven prioritization.
+> AI-powered civic issue reporting and community-driven governance platform that helps citizens report, discover, validate, prioritize, and track public infrastructure issues in real time.
 
 ---
 
-## 🌐 Live Deployment
-**Live Demo:** https://techsprint-deploy.vercel.app
+## 🌐 Live Demo
+
+**Deployment:** [https://civic-fix-ai-eight.vercel.app/]
 
 ---
 
-## 🌟 Overview
+# 🚀 Overview
 
-**CivicFix AI** bridges the gap between citizens and local authorities by providing a unified digital platform for reporting civic issues, tracking resolutions, and prioritizing problems through community voting.
+CivicFix AI is a modern civic engagement platform that bridges the gap between citizens and municipal authorities.
 
-The platform promotes **accountability**, **transparency**, and **data-driven governance**, ensuring that critical civic problems receive the attention they deserve.
+Citizens can report civic infrastructure issues such as:
 
----
+* Potholes
+* Garbage accumulation
+* Drainage problems
+* Streetlight failures
+* Water leakage
+* Road damage
+* Public infrastructure defects
 
-## 🧩 Problem Statement
-
-Urban governance systems often suffer from:
-- Manual and opaque complaint redressal processes
-- No clear prioritization of urgent civic issues
-- Low citizen engagement after complaint submission
-- Inefficient communication between citizens and authorities
-
-**CivicFix AI** addresses these gaps by **digitizing complaints**, **introducing democratic prioritization via voting**, and **empowering authorities with structured dashboards and analytics**.
+The platform uses AI-powered image verification, location intelligence, and community participation to ensure complaints are authentic, properly categorized, and prioritized based on real-world impact.
 
 ---
 
-## 🎯 Core Functionality
+# ✨ Key Features
 
-### 🧱 Basic Features
-- **Citizen Complaint Reporting**  
-  Submit complaints with descriptions, images, and precise geo-location.
+## 🤖 AI-Powered Complaint Verification
 
-- **Role-Based Authentication**  
-  Secure JWT-based authentication for Citizens, Authorities, and Admins.
+Before a complaint is accepted:
 
-- **Complaint Lifecycle Tracking**  
-  Track complaints through *Pending*, *In Progress*, and *Resolved* states.
+* AI validates uploaded images
+* Detects whether the image depicts a real civic issue
+* Rejects irrelevant images (anime, screenshots, memes, pets, landscapes, etc.)
+* Validates image-description consistency
+* Auto-generates:
 
-- **Community Voting System**  
-  One-vote-per-user mechanism to prioritize high-impact issues.
+  * Category
+  * Severity
+  * Confidence score
+  * Tags
 
----
+### Example
 
-### ⚙️ Advanced Features
-- **📍 Location-Based Filtering**  
-  Ward-wise and area-wise complaint views for authorities.
+✅ Real pothole image + pothole description → Accepted
 
-- **📊 Priority Analytics**  
-  Ranking of complaints based on votes and engagement metrics.
+❌ Batman image + pothole description → Rejected
 
-- **🖼️ Secure Image Uploads**  
-  Media storage and optimization using Cloudinary.
-
-- **🧩 Clean Backend Architecture**  
-  Modular structure with Controllers, Services, Middlewares, and Utilities.
+❌ Pothole image + "Street Light Issue" description → Rejected
 
 ---
 
-## 🤖 System & Technical Capabilities
+## 📝 Smart Complaint Reporting
 
-- **JWT + Role Guards** for fine-grained access control  
-- **Vote Deduplication** enforced via database-level indexing  
-- **Centralized Error Handling** using `ApiError` and `ApiResponse`  
-- **Scalable MongoDB Schema Design** for high-volume civic data  
+Guided multi-step workflow:
 
----
+### Step 1
 
-## 🎨 User Experience
+Upload evidence photo
 
-- **📱 Fully Responsive UI** for mobile, tablet, and desktop
-- **⚡ Fast State Management** using Zustand
-- **🧭 Intuitive Workflows** from complaint creation to resolution tracking
-- **🗺️ Interactive Maps** for visualizing complaint locations
+### Step 2
 
----
+Select location
 
-## 🧠 Tech Stack
+* Current location
+* Map picker
+* Manual map selection
 
-### 🎨 Frontend
-- React 19 + Vite  
-- Tailwind CSS  
-- Zustand (state management)  
-- Axios  
-- Leaflet & React Leaflet  
-- Google OAuth (`@react-oauth/google`)  
-- Recharts (analytics & charts)  
-- Lucide React (icons)  
-- React Hot Toast (notifications)  
+### Step 3
+
+Describe issue
+
+### Step 4
+
+Review & Submit
 
 ---
 
-### ⚙️ Backend
-- Node.js & Express.js (v5)
-- MongoDB & Mongoose
-- JWT Authentication
-- bcrypt (password hashing)
-- Cloudinary (media storage)
-- Multer & Multer-Cloudinary
-- Nodemailer (email services)
-- OpenAI API
-- UUID
-- dotenv, CORS, Cookie Parser
+## 🗺️ Interactive Civic Intelligence Map
+
+Explore civic issues across the city using an interactive map.
+
+Features:
+
+* Complaint markers
+* Nearby issues
+* Search locations
+* Location-based discovery
+* Complaint clustering
+* Live community feed
+* Map-driven complaint exploration
 
 ---
 
-## ☁️ Google Technologies Used
+## 📍 Location-Aware Discovery
 
-This project integrates multiple **Google-powered technologies** to enhance authentication, mapping, and AI-driven analysis:
+Citizens can discover issues using:
 
-- **Google OAuth 2.0**  
-  Secure and seamless authentication for users using Google accounts.
+### Nearby
 
-- **Google Cloud Vision API**  
-  AI-powered image analysis for validating and categorizing complaint images.
+Issues within a configurable radius
 
-- **Google Auth Library**  
-  Secure token verification and authentication handling on the backend.
+### Ward
 
-These technologies collectively improve **security**, **accuracy**, and **user experience** while ensuring enterprise-grade reliability.
+Issues in a specific ward
 
----
+### City
 
-## 🚀 Setup & Installation
+Issues reported across the city
 
-### Prerequisites
-- Node.js (v18+ recommended)
-- MongoDB (local or cloud)
-- Cloudinary account
-- Google Cloud project (OAuth, Maps, Vision API enabled)
+### All Reports
+
+Complete public issue feed
 
 ---
 
-### 🧭 Steps
+## 🤝 Community Support System
+
+Instead of duplicate reporting:
+
+Citizens can:
+
+* Support existing complaints
+* Increase issue visibility
+* Help authorities prioritize problems
+
+Benefits:
+
+* Reduced duplicate reports
+* Better prioritization
+* Stronger community engagement
+
+---
+
+## 📊 Complaint Lifecycle Tracking
+
+Track complaints through every stage:
+
+### Submitted
+
+Complaint successfully reported
+
+### Under Review
+
+Authority reviewing complaint
+
+### In Progress
+
+Work initiated
+
+### Resolved
+
+Issue fixed
+
+---
+
+## 🏢 Authority Dashboard
+
+Dedicated dashboard for municipal authorities.
+
+Capabilities:
+
+* View ward-specific complaints
+* Filter by category
+* Manage complaint status
+* Prioritize high-impact issues
+* Monitor community support
+* Track resolution progress
+
+---
+
+## 🔐 Authentication & Security
+
+### Citizen Authentication
+
+* Email / Password Login
+* Google OAuth Login
+* Google OAuth Signup
+
+### Authority Authentication
+
+* Secure Authority Login
+* Role-Based Access Control
+
+### Security
+
+* JWT Authentication
+* Protected Routes
+* Role Guards
+* Password Hashing (bcrypt)
+
+---
+
+## 🎨 Modern User Experience
+
+### Responsive Design
+
+Optimized for:
+
+* Desktop
+* Tablet
+* Mobile
+
+### Features
+
+* Dark modern interface
+* Multi-step reporting wizard
+* Interactive maps
+* Real-time feedback
+* Accessible navigation
+* Consistent design system
+
+---
+
+# 🧠 Technology Stack
+
+## Frontend
+
+* React 19
+* Vite
+* Tailwind CSS
+* Zustand
+* Axios
+* React Router
+* React Hot Toast
+* Recharts
+* Lucide React
+* Leaflet
+* React Leaflet
+* Google OAuth
+
+---
+
+## Backend
+
+* Node.js
+* Express.js
+* MongoDB
+* Mongoose
+* JWT
+* bcrypt
+* Cloudinary
+* Multer
+* Nodemailer
+* OpenAI Vision API
+* UUID
+
+---
+
+# 🤖 AI Features
+
+CivicFix AI leverages multimodal AI for civic issue validation.
+
+### AI Capabilities
+
+* Civic image classification
+* Image authenticity verification
+* Image-description matching
+* Auto categorization
+* Severity assessment
+* Confidence scoring
+* Automated tagging
+
+---
+
+# ☁️ Integrations
+
+### Google OAuth
+
+Secure social authentication
+
+### Cloudinary
+
+Image storage and optimization
+
+### OpenAI Vision
+
+AI-powered civic issue validation
+
+### Leaflet
+
+Interactive mapping and location services
+
+---
+
+# 📂 Architecture
+
+Insert your architecture diagram here.
+
+```text
+Frontend (React)
+      │
+      ▼
+Backend API (Express)
+      │
+ ┌────┼────┐
+ ▼    ▼    ▼
+MongoDB Cloudinary OpenAI
+```
+
+---
+
+# 🛠️ Local Setup
+
+## Prerequisites
+
+* Node.js 18+
+* MongoDB
+* Cloudinary Account
+* OpenAI API Key
+* Google OAuth Credentials
+
+---
+
+## Installation
+
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/civicfix-ai.git
+git clone https://github.com/rudraksh-mall/CivicFix.git
 
-# Navigate to the project directory
-cd civicfix-ai
+cd CivicFix
 
-# Backend setup
+# Backend
 cd backend
 npm install
 npm run dev
 
-# Frontend setup (new terminal)
+# Frontend
 cd frontend
 npm install
 npm run dev
 ```
 
+---
 
-## 👥 Team
+# 👥 Team
 
-This project was developed collaboratively as a team effort:
-
-- **Pratyush Bhaskar**
-- **Rudraksh Mall**
-- **Rajeev Dixit**
-- **Sahil Bharne**
+### Rudraksh Mall
+### Pratyush Bhaskar
+### Rajeev Dixi
+### Sahil Bharne
+---
