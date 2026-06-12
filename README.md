@@ -1,4 +1,4 @@
-# 🏛️ CivicFix AI
+# 🏛️ CivicFix
 
 > AI-powered civic issue reporting and community-driven governance platform that helps citizens report, discover, validate, prioritize, and track public infrastructure issues in real time.
 
