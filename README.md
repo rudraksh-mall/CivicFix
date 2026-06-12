@@ -341,6 +341,6 @@ npm run dev
 
 ### Rudraksh Mall
 ### Pratyush Bhaskar
-### Rajeev Dixi
+### Rajeev Dixit
 ### Sahil Bharne
 ---
